@@ -1,4 +1,5 @@
 require 'mkmf'
+require 'cgi'
 
 dir_config("puma_http11")
 
@@ -6,6 +7,16 @@ if $mingw && RUBY_VERSION >= '2.4'
   append_cflags  '-fstack-protector-strong -D_FORTIFY_SOURCE=2'
   append_ldflags '-fstack-protector-strong -l:libssp.a'
   have_library 'ssp'
+end
+
+if ENV['PUMA_COMPILE_OPTS']
+  compile_options = CGI::parse(ENV['PUMA_COMPILE_OPTS'])
+
+  # CGI::parse returns a hash with default [] instead of nil
+  if compile_options['querymaxlength'].any?
+    query_max_length = compile_options['querymaxlength'].first
+    append_cflags "-DCONFIGURED_QUERY_STRING_MAX_LENGTH=#{query_max_length}"
+  end
 end
 
 unless ENV["DISABLE_SSL"]
