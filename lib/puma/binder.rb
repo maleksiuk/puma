@@ -280,9 +280,26 @@ module Puma
         s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       end
       s.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-      s.listen backlog
 
-      ssl = MiniSSL::Server.new s, ctx
+      ssl_context = OpenSSL::SSL::SSLContext.new
+      ssl_context.cert = OpenSSL::X509::Certificate.new(File.open(ctx.cert)) # mtodo: close files?
+      ssl_context.key = OpenSSL::PKey::RSA.new(File.open(ctx.key))
+      ssl_context.ca_file = ctx.ca if ctx.ca
+
+      ssl_context.options = OpenSSL::SSL::OP_NO_COMPRESSION | OpenSSL::SSL::OP_CIPHER_SERVER_PREFERENCE | OpenSSL::SSL::OP_SINGLE_ECDH_USE
+
+      ssl_context.min_version = if ctx.no_tlsv1_1
+        :TLS1_2
+      elsif ctx.no_tlsv1
+        :TLS1_1
+      else
+        :TLS1
+      end
+      # mtodo: ssl_context.session_cache_mode = something 
+
+      ssl = OpenSSL::SSL::SSLServer.new s, ssl_context
+      ssl.listen backlog
+
       env = @proto_env.dup
       env[HTTPS_KEY] = HTTPS
       @envs[ssl] = env
