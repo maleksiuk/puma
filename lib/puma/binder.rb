@@ -288,12 +288,15 @@ module Puma
 
       ssl_context.options = OpenSSL::SSL::OP_NO_COMPRESSION | OpenSSL::SSL::OP_CIPHER_SERVER_PREFERENCE | OpenSSL::SSL::OP_SINGLE_ECDH_USE
 
-      ssl_context.min_version = if ctx.no_tlsv1_1
-        :TLS1_2
-      elsif ctx.no_tlsv1
-        :TLS1_1
-      else
-        :TLS1
+      # mtodo: see what JRuby will support for setting versions
+      if !IS_JRUBY
+        ssl_context.min_version = if ctx.no_tlsv1_1
+          :TLS1_2
+        elsif ctx.no_tlsv1
+          :TLS1_1
+        else
+          :TLS1
+        end
       end
       # mtodo: ssl_context.session_cache_mode = something 
 
